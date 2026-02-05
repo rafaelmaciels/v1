@@ -1,1 +1,22 @@
-{\n  "name": "rafaelmaciels/v1",\n  "description": "Projeto PHP - inicial",\n  "type": "project",\n  "license": "MIT",\n  "require": {\n    "php": "^8.0"\n  },\n  "require-dev": {\n    "phpunit/phpunit": "^9.0"\n  },\n  "autoload": {\n    "psr-4": {\n      "App\\": "src/"\n    }\n  },\n  "autoload-dev": {\n    "psr-4": {\n      "Tests\\": "tests/"\n    }\n  },\n  "scripts": {\n    "test": "vendor/bin/phpunit"\n  }\n}
+{
+  "name": "rafaelmaciels/v1",
+  "description": "Projeto PHP - inicial",
+  "type": "project",
+  "license": "MIT",
+  "require": {
+    "php": "^8.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^9.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/"
+    }
+  },
+  "config": {
+    "platform": {
+      "php": "8.0"
+    }
+  }
+}
