@@ -18,7 +18,13 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Validate composer.json and composer.lock
-      run: composer validate --strict
+      run: |
+        if [ -f composer.json ]; then
+          echo "Found composer.json — running composer validate --strict"
+          composer validate --strict
+        else
+          echo "composer.json not found, skipping composer validate"
+        fi
 
     - name: Cache Composer packages
       id: composer-cache
@@ -30,9 +36,15 @@ jobs:
           ${{ runner.os }}-php-
 
     - name: Install dependencies
-      run: composer install --prefer-dist --no-progress
+      run: |
+        if [ -f composer.json ]; then
+          echo "Found composer.json — running composer install"
+          composer install --prefer-dist --no-progress
+        else
+          echo "composer.json not found, skipping composer install"
+        fi
 
-    # Add a test script to composer.json, for instance: "test": "vendor/bin/phpunit"
+    # Adicione um script de testes ao composer.json, exemplo: "test": "vendor/bin/phpunit"
     # Docs: https://getcomposer.org/doc/articles/scripts.md
 
     # - name: Run test suite
