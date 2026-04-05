@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sistemas</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background:
+          radial-gradient(circle at top, rgba(16, 185, 129, 0.12), transparent 35%),
+          #050505;
+        color: #8cff95;
+        font-family: "Courier New", Courier, monospace;
+      }
+
+      .terminal {
+        width: min(920px, 100%);
+        min-height: 320px;
+        padding: 28px;
+        border: 1px solid rgba(140, 255, 149, 0.2);
+        border-radius: 18px;
+        background: rgba(2, 8, 2, 0.92);
+        box-shadow: 0 0 40px rgba(0, 0, 0, 0.45);
+      }
+
+      .header {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 24px;
+      }
+
+      .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #17341b;
+        border: 1px solid rgba(140, 255, 149, 0.22);
+      }
+
+      .line,
+      .item-link,
+      .empty {
+        font-size: clamp(1rem, 2.5vw, 1.4rem);
+        line-height: 1.7;
+      }
+
+      .prompt {
+        color: #63d471;
+      }
+
+      .item {
+        margin-top: 8px;
+      }
+
+      .item-line {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 10px;
+      }
+
+      .item-link {
+        display: inline-block;
+        color: #8cff95;
+        text-decoration: none;
+        width: fit-content;
+      }
+
+      .item-link:hover {
+        color: #c6ffcb;
+        text-decoration: underline;
+      }
+
+      .item-link::after {
+        content: "_";
+        animation: blink 1s steps(2, end) infinite;
+      }
+
+      .item-summary,
+      .empty {
+        margin-top: 6px;
+        margin-left: 0;
+        color: #62ad68;
+        font-size: clamp(0.9rem, 2vw, 1rem);
+        line-height: 1.6;
+      }
+
+      .empty[hidden] {
+        display: none;
+      }
+
+      @keyframes blink {
+        0%,
+        49% {
+          opacity: 1;
+        }
+
+        50%,
+        100% {
+          opacity: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="terminal">
+      <div class="header" aria-hidden="true">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </div>
+      <section id="systems" aria-live="polite"></section>
+
+      <div id="empty" class="empty" hidden>
+        nenhum sistema encontrado em <code>/sistemas</code>
+      </div>
+    </main>
+
+    <script>
+      const systemMeta = {
+        barberflow: {
+          summary:
+            "BarberFlow e um sistema web simples e funcional para gerenciamento de agendamentos em barbearias. O projeto foi desenvolvido com foco em usabilidade, desempenho e aplicacao pratica, permitindo que clientes agendem horarios sem necessidade de cadastro.",
+          url: "https://rafaelmaciel.net/sistemas/barberflow",
+        },
+        v1: {
+          summary:
+            "Este repositorio guarda a primeira e ate entao unica versao do meu site pessoal, criado em 2016 e mantido no ar desde entao. Em janeiro de 2026, decidi finalmente construir um site pessoal mais profissional, mas mantive esta versao em um subdominio para que, alem da lembranca, ela sirva como um verdadeiro registro historico da minha trajetoria digital.",
+          url: "https://rafaelmaciel.net/v1",
+        },
+        blog: {
+          summary:
+            "Este blog nasceu como um lugar seguro. Um espaco onde eu posso escrever durante as crises e fora delas, sem a obrigacao de parecer bem, forte ou resolvido. Aqui nao tem tecnica milagrosa, nem discurso motivacional. Tem palavra escrita no tempo em que ela consegue sair.",
+          url: "https://rafaelmaciel.net/blog",
+        },
+      };
+
+      function extractFoldersFromHtml(html) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+
+        return [...doc.querySelectorAll("a")]
+          .map((link) => link.getAttribute("href") || "")
+          .filter((href) => href.endsWith("/"))
+          .map((href) => href.replace(/^\.?\//, "").replace(/\/$/, ""))
+          .filter((name) => name && name !== "." && name !== "..")
+          .filter((name) => !["index.html", "list.php"].includes(name.toLowerCase()))
+          .sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
+      }
+
+      async function fetchFolders() {
+        const sources = ["./list.php", "./"];
+
+        for (const source of sources) {
+          try {
+            const response = await fetch(source, { cache: "no-store" });
+            if (!response.ok) {
+              continue;
+            }
+
+            const html = await response.text();
+            const folders = extractFoldersFromHtml(html);
+
+            if (folders.length) {
+              return folders;
+            }
+          } catch (error) {
+            console.warn(`Falha ao consultar ${source}`, error);
+          }
+        }
+
+        return [];
+      }
+
+      function buildItems(folders) {
+        const localItems = folders.map((folder) => ({
+          name: folder,
+          url: systemMeta[folder.toLowerCase()]?.url || `./${folder}/`,
+          summary:
+            systemMeta[folder.toLowerCase()]?.summary ||
+            "Sistema publicado nesta pasta, acessivel diretamente por este atalho.",
+        }));
+
+        const externalItems = Object.entries(systemMeta)
+          .filter(([, meta]) => meta.url)
+          .filter(([name]) => !folders.some((folder) => folder.toLowerCase() === name))
+          .map(([name, meta]) => ({
+            name,
+            url: meta.url,
+            summary: meta.summary,
+          }));
+
+        return [...localItems, ...externalItems];
+      }
+
+      async function renderSystems() {
+        const systems = document.getElementById("systems");
+        const empty = document.getElementById("empty");
+        const folders = await fetchFolders();
+        const items = buildItems(folders);
+
+        systems.innerHTML = "";
+
+        if (!items.length) {
+          empty.hidden = false;
+          return;
+        }
+
+        let currentIndex = 0;
+
+        function paintItem(entry) {
+          systems.innerHTML = "";
+
+          const item = document.createElement("article");
+          item.className = "item";
+
+          const line = document.createElement("div");
+          line.className = "item-line";
+
+          const prompt = document.createElement("span");
+          prompt.className = "prompt";
+          prompt.textContent = "rafael@webdev:~/sistemas$";
+
+          const link = document.createElement("a");
+          link.className = "item-link";
+          link.href = entry.url;
+          link.textContent = `/${entry.name}`;
+
+          const summary = document.createElement("div");
+          summary.className = "item-summary";
+          summary.textContent = entry.summary;
+
+          line.appendChild(prompt);
+          line.appendChild(link);
+          item.appendChild(line);
+          item.appendChild(summary);
+          systems.appendChild(item);
+        }
+
+        paintItem(items[currentIndex]);
+
+        if (items.length > 1) {
+          window.setInterval(() => {
+            currentIndex = (currentIndex + 1) % items.length;
+            paintItem(items[currentIndex]);
+          }, 10000);
+        }
+      }
+
+      renderSystems();
+    </script>
+  </body>
+</html>
